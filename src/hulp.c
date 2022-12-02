@@ -13,9 +13,7 @@
 #   include "driver/rtc_cntl.h"
 #endif
 #include "driver/rtc_io.h"
-#include "driver/adc.h"
 #include "soc/rtc.h"
-#include "soc/adc_periph.h"
 
 #include "hulp.h"
 #include "hulp_compat.h"
@@ -35,65 +33,6 @@ esp_err_t hulp_configure_pin(gpio_num_t pin, rtc_gpio_mode_t mode, gpio_pull_mod
     {
         ESP_LOGE(TAG, "[%s] error - %d (%d, %d, %" PRIu32 ")", __func__, pin, mode, pull_mode, level);
         return ESP_FAIL;
-    }
-    return ESP_OK;
-}
-
-int hulp_adc_get_periph_index(gpio_num_t pin)
-{
-    for(int periph = 0; periph < SOC_ADC_PERIPH_NUM; ++periph)
-    {
-        for(int channel = 0; channel < SOC_ADC_MAX_CHANNEL_NUM; ++channel)
-        {
-            if(adc_channel_io_map[periph][channel] == pin) return periph;
-        }
-    }
-    ESP_LOGE(TAG, "no ADC periph for gpio %d", pin);
-    return -1;
-}
-
-int hulp_adc_get_channel_num(gpio_num_t pin)
-{
-    for(int periph = 0; periph < SOC_ADC_PERIPH_NUM; ++periph)
-    {
-        for(int channel = 0; channel < SOC_ADC_MAX_CHANNEL_NUM; ++channel)
-        {
-            if(adc_channel_io_map[periph][channel] == pin) return channel;
-        }
-    }
-    ESP_LOGE(TAG, "no ADC channel for gpio %d", pin);
-    return -1;
-}
-
-esp_err_t hulp_configure_analog_pin(gpio_num_t pin, adc_atten_t attenuation, adc_bits_width_t width)
-{
-    int adc_unit_index = hulp_adc_get_periph_index(pin);
-    int adc_channel = hulp_adc_get_channel_num(pin);
-
-    if(adc_unit_index < 0 || adc_channel < 0)
-    {
-        ESP_LOGE(TAG, "invalid ADC pin %d (%d, %d)", pin, adc_unit_index, adc_channel);
-        return ESP_ERR_INVALID_ARG;
-    }
-
-    if(adc_unit_index == 0)
-    {
-        adc1_config_channel_atten((adc1_channel_t)adc_channel, attenuation); //Does adc_gpio_init() internally
-        adc1_config_width(width);
-        adc1_ulp_enable();
-    }
-    else
-    {
-        adc2_config_channel_atten((adc2_channel_t)adc_channel, attenuation); //Does adc2_pad_init() internally
-        //Do a read in order to set some regs
-        int adc2val;
-        adc2_get_raw((adc2_channel_t)adc_channel, width, &adc2val);
-        //Equivalent of adc_set_controller( ADC_UNIT_2, ADC_CTRL_ULP )
-        REG_CLR_BIT(SENS_SAR_MEAS_START2_REG, SENS_MEAS2_START_FORCE);
-        REG_CLR_BIT(SENS_SAR_MEAS_START2_REG, SENS_SAR2_EN_PAD_FORCE);
-        REG_CLR_BIT(SENS_SAR_READ_CTRL2_REG, SENS_SAR2_DIG_FORCE);
-        REG_CLR_BIT(SENS_SAR_READ_CTRL2_REG, SENS_SAR2_PWDET_FORCE);
-        // REG_SET_BIT(SYSCON_SARADC_CTRL_REG, SYSCON_SARADC_SAR2_MUX);
     }
     return ESP_OK;
 }
@@ -196,20 +135,6 @@ void hulp_peripherals_on(void)
 {
     hulp_set_start_delay();
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-}
-
-void hulp_configure_hall_effect_sensor(void)
-{
-    //GPIO 36
-    adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_6);
-    //GPIO 39
-    adc1_config_channel_atten(ADC1_CHANNEL_3, ADC_ATTEN_DB_6);
-    adc1_config_width(ADC_WIDTH_BIT_12);
-    adc1_ulp_enable();
-    REG_SET_BIT(SENS_SAR_TOUCH_CTRL1_REG, SENS_HALL_PHASE_FORCE);
-    REG_SET_BIT(SENS_SAR_TOUCH_CTRL1_REG, SENS_XPD_HALL_FORCE);
-    //Connect sensor to 36 and 39
-    REG_SET_BIT(RTC_IO_HALL_SENS_REG, RTC_IO_XPD_HALL);
 }
 
 static uint64_t hulp_us_to_ticks(uint64_t time_us)

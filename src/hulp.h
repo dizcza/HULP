@@ -3,7 +3,6 @@
 
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
-#include "driver/adc.h"
 
 #include "hulp_compat.h"
 
@@ -36,14 +35,6 @@ typedef enum {
  */
 esp_err_t hulp_configure_pin(gpio_num_t pin, rtc_gpio_mode_t mode, gpio_pull_mode_t pull_mode, uint32_t level);
 
-/**
- * Initialise and configure a pin for ULP analog input
- *
- * pin: GPIO pin (eg. GPIO_NUM_32)
- * attenuation: Channel attenuation, one of ADC_ATTEN_DB_0, ADC_ATTEN_DB_2_5, ADC_ATTEN_DB_6 or ADC_ATTEN_DB_11
- * width: Bit capture width, one of ADC_WIDTH_BIT_9, ADC_WIDTH_BIT_10, ADC_WIDTH_BIT_11 or ADC_WIDTH_BIT_12
- */
-esp_err_t hulp_configure_analog_pin(gpio_num_t pin, adc_atten_t attenuation, adc_bits_width_t width);
 
 /**
  * Prepares GPIOs for use with ULP hardware I2C.
@@ -101,12 +92,6 @@ esp_err_t hulp_register_i2c_slave(uint8_t index, uint8_t address);
  * Necessary to maintain some pin states during sleep, internal PU/PD resistors, ULP wakeup interval switching, etc.
  */
 void hulp_peripherals_on(void);
-
-/**
- * Prepare the hall effect sensor for the ULP.
- * Sensor uses ADC channels on GPIO_36 (SENS_VP) and GPIO_39 (SENS_VN). Nothing should be externally connected to these pins.
- */
-void hulp_configure_hall_effect_sensor(void);
 
 /**
  * Configure the temperature sensor for the ULP
@@ -232,16 +217,6 @@ esp_err_t hulp_configure_pin_int(gpio_num_t gpio_num, gpio_int_type_t intr_type)
  * @brief Get the frequency of RTC Fast Clock
  */
 uint32_t hulp_get_fast_clk_freq(void);
-
-/**
- * Internal. Do not use directly.
- */
-int hulp_adc_get_periph_index(gpio_num_t pin);
-
-/**
- * Internal. Do not use directly.
- */
-int hulp_adc_get_channel_num(gpio_num_t pin);
 
 #ifdef __cplusplus
 }
