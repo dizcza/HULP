@@ -383,10 +383,10 @@ extern "C" {
                 // Include the subroutine
                 M_INCLUDE_I2CBB_CMD(LABEL_I2C_READ, LABEL_I2C_WRITE, GPIO_NUM_25, GPIO_NUM_26)
 */
-#define M_INCLUDE_I2CBB_CMD(label_read, label_write, scl_gpio, sda_gpio) \
-    M_INCLUDE_I2CBB_CMD_(label_read, label_write, scl_gpio, sda_gpio, R1, R2, R3)
+#define M_INCLUDE_I2CBB_CMD(label_read, scl_gpio, sda_gpio) \
+    M_INCLUDE_I2CBB_CMD_(label_read, scl_gpio, sda_gpio, R1, R2, R3)
 
-#define M_INCLUDE_I2CBB_CMD_(label_read, label_write, scl_gpio, sda_gpio, reg_ptr, reg_scratch, reg_return) \
+#define M_INCLUDE_I2CBB_CMD_(label_read, scl_gpio, sda_gpio, reg_ptr, reg_scratch, reg_return) \
     M_LABEL(label_read), \
         I_MOVI(reg_scratch, 32), \
         M_MOVL(R0, label_read), \
@@ -462,23 +462,7 @@ extern "C" {
         I_LD(reg_return, reg_return, 89), \
         I_GPIO_OUTPUT_DIS(sda_gpio), \
         I_SUBI(R0, R0, 2), \
-        I_BXR(reg_return), \
-    M_LABEL(label_write), \
-        I_MOVI(reg_scratch, 34), \
-        I_BGE(-75, 0), \
-        I_LD(R0, reg_ptr, 1), \
-        I_SUBR(R0, R0, reg_return), \
-        I_BL(-12, 1), \
-        I_ANDI(R0, reg_return, 1), \
-        I_BL(2, 1), \
-        I_STAGE_INC(100), \
-        I_RSHI(R0, reg_return, 1), \
-        I_ADDR(R0, R0, reg_ptr), \
-        I_LD(R0, R0, 2), \
-        I_ADDI(reg_return, reg_return, 1), \
-        I_JUMPS(-52, 100, JUMPS_GE), \
-        I_BGE(-76, 0), \
-        I_HALT()
+        I_BXR(reg_return)
 
 #ifdef __cplusplus
 }
